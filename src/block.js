@@ -1,57 +1,61 @@
 const SHA256 = require(`crypto-js/sha256`);
-const hex2ascii = require("hex2ascii");
 
-class Block {
-  constructor(data) {
-    this.hash = null;
-    this.height = 0;
-    this.body = Buffer.from(JSON.stringify(data).toString("hex"));
-    this.time = 0;
-    this.previousBlockHash = null;
-  }
 
-  // validamos que el bloque es correcto (no ha sido manipulado)
-  validate() {
-    const self = this;
-    return new Promise((resolve, reject) => {
-      // guardamos el hash actual
-      let currentHash = self.hash;
+// al crearse varios bloques, subimos la dificultad de rentalización
+const DIFFICULTY = 3;
+const MINE_RATE = 2000;
 
-      // hash    que agregamos
-      self.hash = SHA256(JSON.stringify({ ...self, hash: null })).toString();
+class Block{
+    constructor(actualTime, previousHash, hash, data, nonce, difficulty){
+        this.time = actualTime;
+        this.previousHash = previousHash;
+        this.hash = hash;
+        this.data = data;
+        this.nonce = nonce;
+        this.difficulty = difficulty;
+    }
 
-      if (currentHash !== self.hash) {
-        return resolve(false);
+    static get genesis(){
+        const time = new Date("2009-03-01").getTime();
+
+        // nuevo bloque
+        return new this(
+            time,
+            undefined,
+            "genesis hash",
+            "Genesis Block",
+            0,
+            DIFFICULTY
+        );
+    }
+
+    static mine(previousBlock, data){
+        const {hash:previousHash} = previousBlock;
+        let {difficulty} = previousBlock;
+        let hash;
+        let time;
+        let nonce = 0;
+
+        do {
+            time = Date.now();
+            nonce +=1;
+            difficulty = previousBlock.time + MINE_RATE > time ? difficulty + 1 : difficulty -1;
+            hash = SHA256( previousHash + time + data + nonce + difficulty).toString();
+            
+        } while (hash.substring(0,difficulty) !== "0".repeat(difficulty));
+        return new this(time, previousHash, hash, data, nonce, difficulty);
+    }
+    toString() {
+        const {time, hash,previousHash, data, nonce, difficulty } = this;
+        return ` ⛏️  ✨  Block -
+            Time: ${time}
+            Previus Hash: ${previousHash}
+            Hash : ${hash}
+            Data: ${data}
+            Nonce: ${nonce}
+            Difficulty: ${difficulty}   
+             -----------------------------------------------`;
       }
-      resolve(true);
-    });
-  }
-
-  // decodificación
-  getBlockDatta() {
-    const self = this;
-    return new Promise((resolve, reject) => {
-      let encodedData = self.body; // codigo hexadecimal
-      let decodedData = hex2ascii(encodedData); // se crea un textolargo que contiene el objeto
-      let dataObject = JSON.parse(decodedData); // objeto propio de js
-
-      if (dataObject === "Genesis Block") {
-        reject(new Error("This is the genesis block"));
-      }
-      resolve(dataObject);
-    });
-  }
-
-  toString() {
-    const { hash, height, body, time, previousBlockHash } = this;
-    return `Block -
-        hash : ${hash}
-        height: ${height}
-        body: ${body}
-        time: ${time}
-        previusBlockHash: ${previousBlockHash}
-         -----------------------------------------------`;
-  }
 }
 
 module.exports = Block;
