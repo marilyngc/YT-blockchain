@@ -5,7 +5,7 @@ https://github.com/user-attachments/assets/fbccef15-cb68-49de-ac00-60b5f4e0c2a5
 
 ## Mini explicación ⭐
 
-Usamos el algoritmo SHA256  para poder cibrar el hash de los bloques.
+Usamos el algoritmo SHA256  para poder cifrar el hash de los bloques.
 
 la clase Block se crea cuando se mine. El minado lo que hace es conseguir un nuevo hash y una vez minado ese bloque, se agrega a la blockchain.
 
